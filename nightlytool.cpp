@@ -96,7 +96,7 @@ void GenFile(AppData appd, AppType type)
   file.write(ini);
 }
 int main(int argc, char* argv[]) {  
-  if(argc < 9) {
+  if(argc < 10) {
     std::cout << "Version: " << "1.0.0" << std::endl;
     std::cout << "git stage command is included in this programm" << std::endl;
 		std::cout << "usage: nightlytool File.ini AppName RepoUser Repo Tag Commit_Hash Desc seelist\n0:3dsx and cia\n1:3dsxonly\n2:ciaonly\n3:firm\n4:Firm and cia\n5:Firm and 3dsx\n6:cfw(boot.firm)\n7:3dsx, cia,firm\nAuthor\n" << std::endl;
