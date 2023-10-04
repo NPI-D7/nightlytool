@@ -19,14 +19,15 @@ jobs:
       - name: set up
         run: |
           sudo apt update
-          sudo apt install g++
+          sudo apt install g++ cmake
 
       - name: build
         id: build
         run: |
-          g++ nightlytool.cpp -o nightlytool
+          cmake . -B build
+          cmake --build build -j4
           mkdir -p ~/artifacts
-          cp nightlytool ~/artifacts
+          cp build/nightlytool ~/artifacts
           echo ::set-output name=commit_tag::$(git describe --abbrev=0 --tags)
           echo ::set-output name=commit_hash::$(git log --format=%h -1)
       - name: upload artifacts
@@ -34,18 +35,6 @@ jobs:
         with:
           path: ~/artifacts/*
           name: ubuntu
-  windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build on Windows
-        shell: bash
-        run: g++ nightlytool.cpp -o nightlytool.exe
-      - name: "Publish build to GH Actions"
-        uses: actions/upload-artifact@v2
-        with:
-          path: nightlytool.exe
-          name: "windows"
   publish_build:
     runs-on: ubuntu-latest
     name: Publish build to NPI-D7/nightlys
@@ -63,12 +52,6 @@ jobs:
           name: ubuntu
           path: ubuntu
 
-      - name: Download artifacts windows
-        uses: actions/download-artifact@v2
-        with:
-          name: windows
-          path: windows
-
       - name: Commit and push to NPI-D7/nightlys
         id: commit
         run: |
@@ -78,9 +61,7 @@ jobs:
           git config --global user.name "Tobi-D7"
           git clone --depth 1 https://${{ secrets.TOKEN }}@github.com/NPI-D7/nightlys.git
           cd nightlys
-          cp ${{ github.workspace }}/windows/* .
           cp ${{ github.workspace }}/ubuntu/* .
-          git stage ./*.exe
           git stage nightlytool
           git commit -m "nightlytool | $COMMIT_HASH"
           git tag v$CURRENT_DATE
