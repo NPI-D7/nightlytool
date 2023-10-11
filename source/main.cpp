@@ -4,7 +4,7 @@
 #include <cstring>
 #include <filesystem>
 
-#include "ini.h"
+#include "json.hpp"
 
 struct AppData
 {
@@ -17,28 +17,36 @@ struct AppData
   std::string desc= "No Description";
   std::string Author = "None";
 };
-std::string ver = "1.1.0";
+
+std::string ver = "1.2.0";
 
 void GenFile(AppData appd)
 {
-  mINI::INIFile file(appd.fname);
-  mINI::INIStructure ini;
-
-  file.read(ini);
-  ini[appd.Tag]["name"] = appd.appname;
-  ini[appd.Tag]["desc"] = appd.desc;
-  ini[appd.Tag]["Version"] = appd.Tag;
-  ini[appd.Tag]["commit_tag"] = appd.committag;
-  ini[appd.Tag]["Author"] = appd.Author;
+  nlohmann::json js;
+  std::ifstream ifs(appd.fname, std::ios::in);
+  if(ifs.is_open()) {
+    ifs >> js;
+    ifs.close();
+  }
+  js[appd.Tag]["name"] = appd.appname;
+  js[appd.Tag]["desc"] = appd.desc;
+  js[appd.Tag]["Version"] = appd.Tag;
+  js[appd.Tag]["commit_tag"] = appd.committag;
+  js[appd.Tag]["Author"] = appd.Author;
 
   std::string _3dsx = "https://github.com/" + appd.Devname + "/" + appd.Repo + "/releases/download/" + appd.Tag + "/" + appd.appname + ".3dsx";
   std::string cia = "https://github.com/" + appd.Devname + "/" + appd.Repo + "/releases/download/" + appd.Tag + "/" + appd.appname + ".cia";
 
-  ini[appd.Tag]["3dsx"] =   _3dsx;
-  ini[appd.Tag]["cia"] =   cia;
+  js[appd.Tag]["3dsx"] =   _3dsx;
+  js[appd.Tag]["cia"] =   cia;
   
-  file.write(ini);
+  std::ofstream ofs(appd.fname, std::ios::out);
+  if(ofs.is_open()) {
+    ofs << js.dump(3);
+    ofs.close();
+  }
 }
+
 int main(int argc, char* argv[]) {  
   if(argc < 8) {
     std::cout << "Version: " << ver << std::endl;
@@ -48,7 +56,7 @@ int main(int argc, char* argv[]) {
   if(!std::filesystem::is_directory("db"))
     std::filesystem::create_directory("db");
   AppData appd = {
-    "db/" + std::string(argv[1]) + ".ini",
+    "db/" + std::string(argv[1]) + ".json",
     argv[1],
     argv[2],
     argv[3],
@@ -62,14 +70,21 @@ int main(int argc, char* argv[]) {
   //generate database
   std::string dbname = "db.ini";
   std::string dllink = "https://github.com/" + appd.Devname + "/" + appd.Repo + "/raw/master/" + appd.fname;
-  mINI::INIFile dbfile(dbname); 
-  mINI::INIStructure database;
-  dbfile.read(database);
-  database["info"]["repository"] = appd.Repo;
-  database["info"]["user"] = appd.Devname;
+  nlohmann::json js;
+  std::ifstream ifs("db.json", std::ios::in);
+  if(ifs.is_open()) {
+    ifs >> js;
+    ifs.close();
+  }
+  js["info"]["repository"] = appd.Repo;
+  js["info"]["user"] = appd.Devname;
 
-  database[appd.appname]["Name"] = appd.appname;
-  database[appd.appname]["data"] = dllink;
-  dbfile.write(database);
+  js[appd.appname]["Name"] = appd.appname;
+  js[appd.appname]["data"] = dllink;
+  std::ofstream ofs("db.json", std::ios::out);
+  if(ofs.is_open()) {
+    ofs << js.dump(3);
+    ofs.close();
+  }
   return 0;
 }

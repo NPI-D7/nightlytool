@@ -35,34 +35,3 @@ jobs:
         with:
           path: ~/artifacts/*
           name: ubuntu
-  publish_build:
-    runs-on: ubuntu-latest
-    name: Publish build to NPI-D7/nightlys
-    if: ${{ success() && !startsWith(github.ref, 'refs/pull') }}
-    needs: build
-    env:
-      COMMIT_TAG: ${{ needs.build.outputs.commit_tag }}
-      COMMIT_HASH: ${{ needs.build.outputs.commit_hash }}
-    outputs:
-      current_date: ${{ steps.commit.outputs.current_date }}
-    steps:
-      - name: Download artifacts ubuntu
-        uses: actions/download-artifact@v2
-        with:
-          name: ubuntu
-          path: ubuntu
-
-      - name: Commit and push to NPI-D7/nightlys
-        id: commit
-        run: |
-          CURRENT_DATE=$(date +"%Y%m%d-%H%M%S")
-          echo ::set-output name=current_date::$CURRENT_DATE
-          git config --global user.email "tobid7@outlook.de"
-          git config --global user.name "Tobi-D7"
-          git clone --depth 1 https://${{ secrets.TOKEN }}@github.com/NPI-D7/nightlys.git
-          cd nightlys
-          cp ${{ github.workspace }}/ubuntu/* .
-          git stage nightlytool
-          git commit -m "nightlytool | $COMMIT_HASH"
-          git tag v$CURRENT_DATE
-          git push origin master v$CURRENT_DATE
